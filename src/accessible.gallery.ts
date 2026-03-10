@@ -9,7 +9,8 @@ export default class AccessibleGallery {
   private previousButton!: HTMLElement;
   private nextButton!: HTMLElement;
   private imageReference: HTMLImageElement | null;
-  private imageDescriptionReference: HTMLOutputElement | null;
+  private figureReference: HTMLElement | null;
+  private figCaptionReference: HTMLElement | null;
   private closeModalButton!: HTMLButtonElement;
   private modalInnerContainer!: Element;
   private modalInnerContainerWithImage!: Element;
@@ -31,7 +32,8 @@ export default class AccessibleGallery {
 
   constructor() {
     this.imageReference = null;
-    this.imageDescriptionReference = null;
+    this.figureReference = null;
+    this.figCaptionReference = null;
   }
 
   private getGalleryConfig(): IAccessibleGalleryConfig {
@@ -154,65 +156,41 @@ export default class AccessibleGallery {
     this.preloadImage(galleryLink.href);
   }
 
-  private getNextImage() {
-    this.currentGalleryItemIndex += 1;
-
-    if (this.currentGalleryItemIndex > (this.allGalleryItems.length - 1)) {
-      this.currentGalleryItemIndex = 0;
+  private navigateToImage(direction: 'next' | 'previous'): void {
+    if (direction === 'next') {
+      this.currentGalleryItemIndex += 1;
+      if (this.currentGalleryItemIndex > (this.allGalleryItems.length - 1)) {
+        this.currentGalleryItemIndex = 0;
+      }
+    } else {
+      this.currentGalleryItemIndex -= 1;
+      if (this.currentGalleryItemIndex < 0) {
+        this.currentGalleryItemIndex = this.allGalleryItems.length - 1;
+      }
     }
 
     const link: HTMLAnchorElement = this.allGalleryItems[this.currentGalleryItemIndex].querySelector('[data-accessible-gallery-link]');
     const linkThumbnail: HTMLImageElement = link.querySelector('img')!;
 
     const alt: string | null = linkThumbnail.getAttribute('alt');
+    const caption: string | null = linkThumbnail.getAttribute('data-accessible-gallery-item-caption');
     const isInlineImage: boolean = this.isInlineImage(linkThumbnail.src);
 
-    this.imageReference?.remove();
+    this.figureReference?.remove();
+    this.figureReference = document.createElement('figure');
     this.imageReference = document.createElement('img');
     this.imageReference.id = 'accessible_gallery_image';
     this.imageReference.alt = alt ?? '';
     this.imageReference.src = isInlineImage ? linkThumbnail.src : link.href;
+    this.figureReference.appendChild(this.imageReference);
 
-    this.modalInnerContainerWithImage.appendChild(this.imageReference);
-
-    this.imageDescriptionReference!.textContent = alt ?? '';
-
-    this.createLoadingMessage(linkThumbnail.alt, isInlineImage);
-
-    this.imageReference.addEventListener(
-      'load',
-      this.removeLoadingMessage.bind(this),
-      {
-        once: true
-      });
-
-    this.setCursorToProgress();
-    this.removeCursorProgressOnImageLoadedOrError();
-    this.preloadNextNextImage();
-  }
-
-  private getPreviousImage() {
-    this.currentGalleryItemIndex -= 1;
-
-    if (this.currentGalleryItemIndex < 0) {
-      this.currentGalleryItemIndex = this.allGalleryItems.length - 1;
+    if (caption) {
+      this.figCaptionReference = document.createElement('figcaption');
+      this.figCaptionReference.textContent = caption ?? '';
+      this.figureReference.appendChild(this.figCaptionReference);
     }
 
-    const link: HTMLAnchorElement = this.allGalleryItems[this.currentGalleryItemIndex].querySelector('[data-accessible-gallery-link]');
-    const linkThumbnail: HTMLImageElement = link.querySelector('img')!;
-
-    const alt: string | null = linkThumbnail.getAttribute('alt');
-    const isInlineImage: boolean = this.isInlineImage(linkThumbnail.src);
-
-    this.imageReference?.remove();
-    this.imageReference = document.createElement('img');
-    this.imageReference.id = 'accessible_gallery_image';
-    this.imageReference.alt = alt ?? '';
-    this.imageReference.src = this.isInlineImage(linkThumbnail.src) ? linkThumbnail.src : link.href;
-
-    this.modalInnerContainerWithImage.appendChild(this.imageReference);
-
-    this.imageDescriptionReference!.textContent = alt ?? '';
+    this.modalInnerContainerWithImage.appendChild(this.figureReference);
 
     this.createLoadingMessage(linkThumbnail.alt, isInlineImage);
 
@@ -225,7 +203,20 @@ export default class AccessibleGallery {
 
     this.setCursorToProgress();
     this.removeCursorProgressOnImageLoadedOrError();
-    this.preloadPreviousNextImage();
+
+    if (direction === 'next') {
+      this.preloadNextNextImage();
+    } else {
+      this.preloadPreviousNextImage();
+    }
+  }
+
+  private getNextImage(): void {
+    this.navigateToImage('next');
+  }
+
+  private getPreviousImage(): void {
+    this.navigateToImage('previous');
   }
 
   private handleImageNavigationAction(event: Event) {
@@ -256,7 +247,7 @@ export default class AccessibleGallery {
   }
 
   private closeDialog() {
-    const existingModalDialog: HTMLElement | null = document.getElementById('accessible_gallery_modal');
+    const existingModalDialog: HTMLDialogElement | null = document.getElementById('accessible_gallery_modal') as HTMLDialogElement;
 
     this.removeAllEventListeners();
 
@@ -265,6 +256,7 @@ export default class AccessibleGallery {
     }
 
     document.body.classList.remove('accessible-gallery-active');
+    existingModalDialog.close();
 
     existingModalDialog.remove();
     this.loadingMessageContainer.remove();
@@ -363,13 +355,14 @@ export default class AccessibleGallery {
 
     const createThumbnail = (image: HTMLImageElement) => {
       const thumbnailSrc: string | null = image.getAttribute('data-accessible-gallery-thumbnail');
+      const caption: string | null = image.getAttribute('data-accessible-gallery-item-caption');
       const link: HTMLAnchorElement = image.closest('[data-accessible-gallery-link]')!;
 
       if (thumbnailSrc === null) {
         return;
       }
 
-      thumbnailsList += `<li><a href="${image.src}" data-accessible-gallery-link-id="${link.dataset.accessibleGalleryLinkId}"><img src="${thumbnailSrc || image.src}" alt="${image.alt} thumbnail"></a></li>`;
+      thumbnailsList += `<li><a href="${image.src}" data-accessible-gallery-link-id="${link.dataset.accessibleGalleryLinkId}"><img src="${thumbnailSrc || image.src}" ${caption ? ` data-accessible-gallery-item-caption="${caption}"` : ''} alt="${image.alt} thumbnail"></a></li>`;
     };
 
     thumbnails.forEach(createThumbnail);
@@ -384,6 +377,8 @@ export default class AccessibleGallery {
 
     const modalDialog: HTMLDivElement = document.createElement('div');
     const existingModalDialog: HTMLElement | null = document.getElementById('accessible_gallery_modal');
+    const modalDialog: HTMLDialogElement = document.createElement('dialog');
+    const existingModalDialog: HTMLDialogElement | null = document.getElementById('accessible_gallery_modal') as HTMLDialogElement;
     const thumbnailImage: HTMLImageElement = target.querySelector('img')!;
 
     this.restoreFocusToElement = target;
@@ -392,8 +387,6 @@ export default class AccessibleGallery {
 
     modalDialog.id = 'accessible_gallery_modal';
     modalDialog.className = 'accessible-gallery-modal';
-    modalDialog.setAttribute('tabindex', '-1');
-    modalDialog.setAttribute('role', 'dialog');
     modalDialog.setAttribute('aria-labelledby', 'accessible_gallery_heading');
 
     const highestZindex: number = CommonUtilities.getHighestZindex();
@@ -414,6 +407,7 @@ export default class AccessibleGallery {
     this.imageReference = document.createElement('img');
 
     const alt: string | null = thumbnailImage.getAttribute('alt');
+    const caption: string | null = thumbnailImage.getAttribute('data-accessible-gallery-item-caption');
     const isInlineImage: boolean = this.isInlineImage(thumbnailImage.src);
 
     this.imageReference.id = 'accessible_gallery_image';
@@ -421,11 +415,15 @@ export default class AccessibleGallery {
     this.imageReference.src = isInlineImage ? thumbnailImage.src : target.href;
 
     this.modalInnerContainerWithImage.appendChild(this.imageReference);
+    this.figureReference = document.createElement('figure');
+    this.figureReference.appendChild(this.imageReference);
+    if (caption) {
+      this.figCaptionReference = document.createElement('figcaption');
+      this.figCaptionReference.textContent = caption ?? '';
+      this.figureReference.appendChild(this.figCaptionReference);
+    }
 
-    this.imageDescriptionReference = document.createElement('output');
-    this.imageDescriptionReference.textContent = alt ?? '';
-
-    this.modalInnerContainerWithImage.appendChild(this.imageDescriptionReference);
+    this.modalInnerContainerWithImage.appendChild(this.figureReference);
 
     this.imageReference.addEventListener(
       'load',
@@ -469,7 +467,7 @@ export default class AccessibleGallery {
     modalDialogTitleHeading.textContent = galleryConfig.galleryTitle;
 
     window.setTimeout((): void => {
-      modalDialog.focus();
+      modalDialog.showModal();
     }, 500);
   }
 
@@ -510,15 +508,24 @@ export default class AccessibleGallery {
     const nextLinkThumbnailImage: HTMLImageElement = this.currentGalleryItem.querySelector('img')!;
 
     const alt: string | null = nextLinkThumbnailImage.getAttribute('alt');
+    const caption: string | null = nextLinkThumbnailImage.getAttribute('data-accessible-gallery-item-caption');
     const isInlineImage: boolean = this.isInlineImage(linkThumbnail.src);
 
-    this.imageReference?.remove();
+    this.figureReference?.remove();
+    this.figureReference = document.createElement('figure');
     this.imageReference = document.createElement('img');
     this.imageReference.id = 'accessible_gallery_image';
     this.imageReference.alt = alt ?? '';
     this.imageReference.src = isInlineImage ? linkThumbnail.src : link.href;
 
-    this.modalInnerContainerWithImage.appendChild(this.imageReference);
+    this.figureReference.appendChild(this.imageReference);
+    if (caption) {
+      this.figCaptionReference = document.createElement('figcaption');
+      this.figCaptionReference.textContent = caption;
+      this.figureReference.appendChild(this.figCaptionReference);
+    }
+
+    this.modalInnerContainerWithImage.appendChild(this.figureReference);
 
     this.createLoadingMessage(linkThumbnail.alt, isInlineImage);
 
