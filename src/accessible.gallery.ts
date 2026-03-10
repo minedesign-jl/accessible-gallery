@@ -375,8 +375,6 @@ export default class AccessibleGallery {
   private showImage(target: HTMLAnchorElement) {
     this.currentGalleryItem = target.closest('[data-accessible-gallery-item]')!;
 
-    const modalDialog: HTMLDivElement = document.createElement('div');
-    const existingModalDialog: HTMLElement | null = document.getElementById('accessible_gallery_modal');
     const modalDialog: HTMLDialogElement = document.createElement('dialog');
     const existingModalDialog: HTMLDialogElement | null = document.getElementById('accessible_gallery_modal') as HTMLDialogElement;
     const thumbnailImage: HTMLImageElement = target.querySelector('img')!;
