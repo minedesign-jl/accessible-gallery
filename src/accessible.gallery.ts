@@ -5,7 +5,6 @@ import type { IAccessibleGalleryConfig } from './interfaces/gallery.interfaces';
 import { CommonUtilities } from './utilities/common.utilities';
 
 export default class AccessibleGallery {
-  private restoreFocusToElement!: HTMLElement;
   private previousButton!: HTMLElement;
   private nextButton!: HTMLElement;
   private imageReference: HTMLImageElement | null;
@@ -124,7 +123,6 @@ export default class AccessibleGallery {
     }
 
     linkElement = document.createElement('link');
-
     linkElement.rel = 'preload';
     linkElement.as = 'image';
     linkElement.href = href;
@@ -139,9 +137,9 @@ export default class AccessibleGallery {
       nextGalleryItemIndex = 0;
     }
 
-    const galleryLink: HTMLAnchorElement = this.allGalleryItems[nextGalleryItemIndex].querySelector('[data-accessible-gallery-link]');
+    const galleryButton: HTMLButtonElement = this.allGalleryItems[nextGalleryItemIndex].querySelector('[data-accessible-gallery-link]');
 
-    this.preloadImage(galleryLink.href);
+    this.preloadImage(galleryButton.dataset.src || '');
   }
 
   private preloadPreviousNextImage() {
@@ -151,9 +149,9 @@ export default class AccessibleGallery {
       nextGalleryItemIndex = this.allGalleryItems.length - 1;
     }
 
-    const galleryLink: HTMLAnchorElement = this.allGalleryItems[nextGalleryItemIndex].querySelector('[data-accessible-gallery-link]');
+    const galleryButton: HTMLButtonElement = this.allGalleryItems[nextGalleryItemIndex].querySelector('[data-accessible-gallery-link]');
 
-    this.preloadImage(galleryLink.href);
+    this.preloadImage(galleryButton.dataset.src || '');
   }
 
   private navigateToImage(direction: 'next' | 'previous'): void {
@@ -169,19 +167,19 @@ export default class AccessibleGallery {
       }
     }
 
-    const link: HTMLAnchorElement = this.allGalleryItems[this.currentGalleryItemIndex].querySelector('[data-accessible-gallery-link]');
-    const linkThumbnail: HTMLImageElement = link.querySelector('img')!;
+    const button: HTMLButtonElement = this.allGalleryItems[this.currentGalleryItemIndex].querySelector('[data-accessible-gallery-link]');
+    const buttonThumbnail: HTMLImageElement = button.querySelector('img')!;
 
-    const alt: string | null = linkThumbnail.getAttribute('alt');
-    const caption: string | null = linkThumbnail.getAttribute('data-accessible-gallery-item-caption');
-    const isInlineImage: boolean = this.isInlineImage(linkThumbnail.src);
+    const alt: string | null = buttonThumbnail.getAttribute('alt');
+    const caption: string | null = buttonThumbnail.getAttribute('data-accessible-gallery-item-caption');
+    const isInlineImage: boolean = this.isInlineImage(buttonThumbnail.src);
 
     this.figureReference?.remove();
     this.figureReference = document.createElement('figure');
     this.imageReference = document.createElement('img');
     this.imageReference.id = 'accessible_gallery_image';
     this.imageReference.alt = alt ?? '';
-    this.imageReference.src = isInlineImage ? linkThumbnail.src : link.href;
+    this.imageReference.src = isInlineImage ? buttonThumbnail.src : (button.dataset.src ?? '');
     this.figureReference.appendChild(this.imageReference);
 
     if (caption) {
@@ -192,7 +190,7 @@ export default class AccessibleGallery {
 
     this.modalInnerContainerWithImage.appendChild(this.figureReference);
 
-    this.createLoadingMessage(linkThumbnail.alt, isInlineImage);
+    this.createLoadingMessage(buttonThumbnail.alt, isInlineImage);
 
     this.imageReference.addEventListener(
       'load',
@@ -260,10 +258,6 @@ export default class AccessibleGallery {
 
     existingModalDialog.remove();
     this.loadingMessageContainer.remove();
-
-    CommonUtilities.untrapFromModal();
-
-    this.restoreFocusToElement.focus();
   }
 
   private createLoadingMessageContainer(): void {
@@ -356,13 +350,13 @@ export default class AccessibleGallery {
     const createThumbnail = (image: HTMLImageElement) => {
       const thumbnailSrc: string | null = image.getAttribute('data-accessible-gallery-thumbnail');
       const caption: string | null = image.getAttribute('data-accessible-gallery-item-caption');
-      const link: HTMLAnchorElement = image.closest('[data-accessible-gallery-link]')!;
+      const button: HTMLButtonElement = image.closest('[data-accessible-gallery-link]')!;
 
       if (thumbnailSrc === null) {
         return;
       }
 
-      thumbnailsList += `<li><a href="${image.src}" data-accessible-gallery-link-id="${link.dataset.accessibleGalleryLinkId}"><img src="${thumbnailSrc || image.src}" ${caption ? ` data-accessible-gallery-item-caption="${caption}"` : ''} alt="${image.alt} thumbnail"></a></li>`;
+      thumbnailsList += `<li><button data-src="${image.src}" type="button" data-accessible-gallery-link-id="${button.dataset.accessibleGalleryLinkId}"><img src="${thumbnailSrc || image.src}" ${caption ? ` data-accessible-gallery-item-caption="${caption}"` : ''} alt="${image.alt} thumbnail"></button></li>`;
     };
 
     thumbnails.forEach(createThumbnail);
@@ -372,14 +366,12 @@ export default class AccessibleGallery {
     this.modalInnerContainerWithThumbnails.insertAdjacentHTML('afterbegin', thumbnailsList);
   }
 
-  private showImage(target: HTMLAnchorElement) {
+  private showImage(target: HTMLButtonElement) {
     this.currentGalleryItem = target.closest('[data-accessible-gallery-item]')!;
 
     const modalDialog: HTMLDialogElement = document.createElement('dialog');
     const existingModalDialog: HTMLDialogElement | null = document.getElementById('accessible_gallery_modal') as HTMLDialogElement;
     const thumbnailImage: HTMLImageElement = target.querySelector('img')!;
-
-    this.restoreFocusToElement = target;
 
     modalDialog.innerHTML = '<h2 class="visually-hidden" id="accessible_gallery_heading"></h2><nav id="accessible_gallery_actions" class="accessible-gallery-modal__actions"" aria-label="Go to next or previus image"><button type="button" class="accessible-gallery-modal__previous-image" id="accessible_gallery_modal_previous_image"><span><small class="visually-hidden"></small></span></button><button type="button" class="accessible-gallery-modal__next-image" id="accessible_gallery_modal_next_image"><span><small class="visually-hidden"></small></span></button></nav><div id="accessible_gallery_modal_inner_container" class="accessible-gallery-modal__inner-container"><div id="accessible_gallery_modal_inner_with_image" class="accessible-gallery-modal__inner-container__image"></div><div id="accessible_gallery_modal_inner_with_thumbnails" class="accessible-gallery-modal__inner-container__thumbnails"></div></div>';
 
@@ -410,7 +402,7 @@ export default class AccessibleGallery {
 
     this.imageReference.id = 'accessible_gallery_image';
     this.imageReference.alt = alt ?? '';
-    this.imageReference.src = isInlineImage ? thumbnailImage.src : target.href;
+    this.imageReference.src = isInlineImage ? thumbnailImage.src : (target.dataset.src ?? '');
 
     this.modalInnerContainerWithImage.appendChild(this.imageReference);
     this.figureReference = document.createElement('figure');
@@ -495,26 +487,26 @@ export default class AccessibleGallery {
     });
   }
 
-  private showOriginalImageFromThumbnail(targetThumbail: HTMLAnchorElement): void {
-    const targetImageLink: HTMLAnchorElement = document.querySelector(`[data-accessible-gallery-link-id="${targetThumbail.dataset.accessibleGalleryLinkId}"]`)!;
-    const targetImageLiItem: HTMLLIElement = targetImageLink.closest('[data-accessible-gallery-item]')!;
+  private showOriginalImageFromThumbnail(targetThumbail: HTMLButtonElement): void {
+    const targetImageButton: HTMLButtonElement = document.querySelector(`[data-accessible-gallery-link-id="${targetThumbail.dataset.accessibleGalleryLinkId}"]`)!;
+    const targetImageLiItem: HTMLLIElement = targetImageButton.closest('[data-accessible-gallery-item]')!;
 
     this.findGalleryItemIndex(targetImageLiItem);
 
-    const link: HTMLAnchorElement = this.allGalleryItems[this.currentGalleryItemIndex].querySelector('[data-accessible-gallery-link]');
-    const linkThumbnail: HTMLImageElement = link.querySelector('img')!;
+    const button: HTMLButtonElement = this.allGalleryItems[this.currentGalleryItemIndex].querySelector('[data-accessible-gallery-link]');
+    const buttonThumbnail: HTMLImageElement = button.querySelector('img')!;
     const nextLinkThumbnailImage: HTMLImageElement = this.currentGalleryItem.querySelector('img')!;
 
     const alt: string | null = nextLinkThumbnailImage.getAttribute('alt');
     const caption: string | null = nextLinkThumbnailImage.getAttribute('data-accessible-gallery-item-caption');
-    const isInlineImage: boolean = this.isInlineImage(linkThumbnail.src);
+    const isInlineImage: boolean = this.isInlineImage(buttonThumbnail.src);
 
     this.figureReference?.remove();
     this.figureReference = document.createElement('figure');
     this.imageReference = document.createElement('img');
     this.imageReference.id = 'accessible_gallery_image';
     this.imageReference.alt = alt ?? '';
-    this.imageReference.src = isInlineImage ? linkThumbnail.src : link.href;
+    this.imageReference.src = isInlineImage ? buttonThumbnail.src : (button.dataset.src || '');
 
     this.figureReference.appendChild(this.imageReference);
     if (caption) {
@@ -525,7 +517,7 @@ export default class AccessibleGallery {
 
     this.modalInnerContainerWithImage.appendChild(this.figureReference);
 
-    this.createLoadingMessage(linkThumbnail.alt, isInlineImage);
+    this.createLoadingMessage(buttonThumbnail.alt, isInlineImage);
 
     this.imageReference.addEventListener(
       'load',
@@ -539,8 +531,8 @@ export default class AccessibleGallery {
   }
 
   private handleOpenAction(event: Event): void {
-    const target: HTMLAnchorElement | null = (event.target as Element).closest('[data-accessible-gallery-link]');
-    const targetThumbail: HTMLAnchorElement | null = (event.target as Element).closest('[data-accessible-gallery-link-id]');
+    const target: HTMLButtonElement | null = (event.target as Element).closest('[data-accessible-gallery-link]');
+    const targetThumbail: HTMLButtonElement | null = (event.target as Element).closest('[data-accessible-gallery-link-id]');
 
     if (target === null && targetThumbail) {
 
@@ -559,7 +551,6 @@ export default class AccessibleGallery {
     }
 
     event.preventDefault();
-    CommonUtilities.trapInModal();
 
     this.galleryContainer = target.closest('[data-accessible-gallery]')!;
 
@@ -568,9 +559,9 @@ export default class AccessibleGallery {
     );
 
     const addUniqueDomId = (galleryItem: HTMLLIElement): void => {
-      const galleryLink: HTMLAnchorElement = galleryItem.querySelector('[data-accessible-gallery-link]')!;
+      const galleryButton: HTMLButtonElement = galleryItem.querySelector('[data-accessible-gallery-link]')!;
 
-      galleryLink.dataset.accessibleGalleryLinkId = CommonUtilities.createUniqueDOMId();
+      galleryButton.dataset.accessibleGalleryLinkId = CommonUtilities.createUniqueDOMId();
     };
 
     this.allGalleryItems.forEach(addUniqueDomId);
