@@ -7,11 +7,10 @@
   width: 100%;
   z-index: 2;
 
-  &:focus {
+  &:focus-visible {
     outline: 2px dotted $color-1;
     outline-offset: -2px;
   }
-
   &__actions {
     display: flex;
     height: 1px;
@@ -76,13 +75,23 @@
         }
       }
 
-      &:focus,
-      &:hover {
+      &:focus-visible {
         span {
           outline: 1px auto $color-1;
 
           @supports (outline-color: -webkit-focus-ring-color) {
             outline-color: -webkit-focus-ring-color;
+          }
+        }
+      }
+      @media (hover: hover) {
+        &:hover {
+          span {
+            outline: 1px auto $color-1;
+
+            @supports (outline-color: -webkit-focus-ring-color) {
+              outline-color: -webkit-focus-ring-color;
+            }
           }
         }
       }
@@ -127,12 +136,20 @@
       }
     }
 
-    &:focus,
-    &:hover {
+    &:focus-visible {
       outline: 1px auto $color-1;
 
       @supports (outline-color: -webkit-focus-ring-color) {
         outline-color: -webkit-focus-ring-color;
+      }
+    }
+    @media (hover: hover) {
+      &:hover {
+        outline: 1px auto $color-1;
+
+        @supports (outline-color: -webkit-focus-ring-color) {
+          outline-color: -webkit-focus-ring-color;
+        }
       }
     }
   }
@@ -240,10 +257,15 @@
             height: 64px;
             width: 64px;
 
-            &:focus,
-            &:hover {
+            &:focus-visible {
               outline-offset: -2px;
               outline: 1px auto $color-1;
+            }
+            @media (hover: hover) {
+              &:hover {
+                outline-offset: -2px;
+                outline: 1px auto $color-1;
+              }
             }
 
             img {
