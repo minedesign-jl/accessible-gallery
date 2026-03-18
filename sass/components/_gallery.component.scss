@@ -290,24 +290,18 @@
       }
     }
 
+    // loading info
     span {
       background: rgba(0 0 0 / 70%);
       color: $color-1;
       display: inline-block;
-      left: 0;
       max-width: 100%;
       padding: 1rem;
       position: absolute;
       white-space: nowrap;
       white-space: pre-line;
       z-index: -1;
-
-      @include media-breakpoint-up(md) {
-        @include center(true, false);
-
-        bottom: 2rem;
-        top: auto;
-      }
+      @include center(true, true);
 
       &:empty {
         display: none;

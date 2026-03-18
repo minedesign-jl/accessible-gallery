@@ -161,7 +161,6 @@ export default class AccessibleGallery {
     const button: HTMLButtonElement = this.allGalleryItems[this.currentGalleryItemIndex].querySelector('[data-accessible-gallery-link]');
     const buttonThumbnail: HTMLImageElement = button.querySelector('img')!;
 
-    this.figureReference?.remove();
     this.createFigureWithImage(buttonThumbnail, button.dataset.src, this.modalInnerContainerWithImage, 'accessible_gallery_image');
     if (index >= previousIndex) {
       this.preloadNextNextImage();
@@ -222,6 +221,8 @@ export default class AccessibleGallery {
   }
 
   private createLoadingMessageContainer(): void {
+    this.loadingMessageContainer?.remove();
+
     this.loadingMessageContainer = document.createElement('span');
 
     this.loadingMessageContainer.setAttribute('aria-live', 'polite');
@@ -422,6 +423,8 @@ export default class AccessibleGallery {
   }
 
   private createFigureWithImage(image: HTMLImageElement, altSource: string | undefined, appendTarget: Element, imageId: string | null) {
+    window.clearTimeout(this.showLoadingMessageTimeout);
+    this.figureReference?.remove();
     this.figureReference = document.createElement('figure');
     this.imageReference = document.createElement('img');
 
@@ -451,6 +454,7 @@ export default class AccessibleGallery {
       {
         once: true
       });
+
     this.createLoadingMessageContainer();
     this.createLoadingMessage(this.imageReference.alt, isInlineImage);
 
