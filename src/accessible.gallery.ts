@@ -154,55 +154,17 @@ export default class AccessibleGallery {
     this.preloadImage(galleryButton.dataset.src || '');
   }
 
-  private navigateToImage(direction: 'next' | 'previous'): void {
-    if (direction === 'next') {
-      this.currentGalleryItemIndex += 1;
-      if (this.currentGalleryItemIndex > (this.allGalleryItems.length - 1)) {
-        this.currentGalleryItemIndex = 0;
-      }
-    } else {
-      this.currentGalleryItemIndex -= 1;
-      if (this.currentGalleryItemIndex < 0) {
-        this.currentGalleryItemIndex = this.allGalleryItems.length - 1;
-      }
-    }
+  private navigateToImage(index: number): void {
+    const previousIndex = this.currentGalleryItemIndex;
+
+    this.currentGalleryItemIndex = ((index % this.allGalleryItems.length) + this.allGalleryItems.length) % this.allGalleryItems.length;
 
     const button: HTMLButtonElement = this.allGalleryItems[this.currentGalleryItemIndex].querySelector('[data-accessible-gallery-link]');
     const buttonThumbnail: HTMLImageElement = button.querySelector('img')!;
 
-    const alt: string | null = buttonThumbnail.getAttribute('alt');
-    const caption: string | null = buttonThumbnail.getAttribute('data-accessible-gallery-item-caption');
-    const isInlineImage: boolean = this.isInlineImage(buttonThumbnail.src);
-
     this.figureReference?.remove();
-    this.figureReference = document.createElement('figure');
-    this.imageReference = document.createElement('img');
-    this.imageReference.id = 'accessible_gallery_image';
-    this.imageReference.alt = alt ?? '';
-    this.imageReference.src = isInlineImage ? buttonThumbnail.src : (button.dataset.src ?? '');
-    this.figureReference.appendChild(this.imageReference);
-
-    if (caption) {
-      this.figCaptionReference = document.createElement('figcaption');
-      this.figCaptionReference.textContent = caption ?? '';
-      this.figureReference.appendChild(this.figCaptionReference);
-    }
-
-    this.modalInnerContainerWithImage.appendChild(this.figureReference);
-
-    this.createLoadingMessage(buttonThumbnail.alt, isInlineImage);
-
-    this.imageReference.addEventListener(
-      'load',
-      this.removeLoadingMessage.bind(this),
-      {
-        once: true
-      });
-
-    this.setCursorToProgress();
-    this.removeCursorProgressOnImageLoadedOrError();
-
-    if (direction === 'next') {
+    this.createFigureWithImage(buttonThumbnail, button.dataset.src, this.modalInnerContainerWithImage, 'accessible_gallery_image');
+    if (index >= previousIndex) {
       this.preloadNextNextImage();
     } else {
       this.preloadPreviousNextImage();
@@ -210,11 +172,11 @@ export default class AccessibleGallery {
   }
 
   private getNextImage(): void {
-    this.navigateToImage('next');
+    this.navigateToImage(this.currentGalleryItemIndex + 1);
   }
 
   private getPreviousImage(): void {
-    this.navigateToImage('previous');
+    this.navigateToImage(this.currentGalleryItemIndex - 1);
   }
 
   private handleImageNavigationAction(event: Event) {
