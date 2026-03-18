@@ -307,25 +307,43 @@ export default class AccessibleGallery {
       return;
     }
 
-    let thumbnailsList: string = '<ul>';
+    const thumbnailsList: HTMLElement = document.createElement('ul');
 
     const createThumbnail = (image: HTMLImageElement) => {
       const thumbnailSrc: string | null = image.getAttribute('data-accessible-gallery-thumbnail');
       const caption: string | null = image.getAttribute('data-accessible-gallery-item-caption');
-      const button: HTMLButtonElement = image.closest('[data-accessible-gallery-link]')!;
+      const galleryLinkButton: HTMLButtonElement = image.closest('[data-accessible-gallery-link]')!;
 
       if (thumbnailSrc === null) {
         return;
       }
+      const li = document.createElement('li');
+      const button = document.createElement('button');
+      const img = document.createElement('img');
 
-      thumbnailsList += `<li><button data-src="${image.src}" type="button" data-accessible-gallery-link-id="${button.dataset.accessibleGalleryLinkId}"><img src="${thumbnailSrc || image.src}" ${caption ? ` data-accessible-gallery-item-caption="${caption}"` : ''} alt="${image.alt} thumbnail"></button></li>`;
+      button.dataset.src = image.src;
+      button.type = 'button';
+      button.dataset.accessibleGalleryLinkId = galleryLinkButton.dataset.accessibleGalleryLinkId;
+
+      img.src = thumbnailSrc || image.src;
+      img.alt = `${image.alt} thumbnail`;
+
+      if (caption) {
+        img.dataset.accessibleGalleryItemCaption = caption;
+      }
+
+      button.appendChild(img);
+      li.appendChild(button);
+      thumbnailsList.appendChild(li);
+
+      button.addEventListener('click', (event: Event) => {
+        this.showOriginalImageFromThumbnail(event.currentTarget as HTMLButtonElement);
+      });
     };
 
     thumbnails.forEach(createThumbnail);
 
-    thumbnailsList += '</ul>';
-
-    this.modalInnerContainerWithThumbnails.insertAdjacentHTML('afterbegin', thumbnailsList);
+    this.modalInnerContainerWithThumbnails.appendChild(thumbnailsList);
   }
 
   private showImage(target: HTMLButtonElement) {
@@ -459,47 +477,13 @@ export default class AccessibleGallery {
     });
   }
 
-  private showOriginalImageFromThumbnail(targetThumbail: HTMLButtonElement): void {
-    const targetImageButton: HTMLButtonElement = document.querySelector(`[data-accessible-gallery-link-id="${targetThumbail.dataset.accessibleGalleryLinkId}"]`)!;
+  private showOriginalImageFromThumbnail(targetThumbnail: HTMLButtonElement): void {
+    const targetImageButton: HTMLButtonElement = document.querySelector(`[data-accessible-gallery-link-id="${targetThumbnail.dataset.accessibleGalleryLinkId}"]`)!;
     const targetImageLiItem: HTMLLIElement = targetImageButton.closest('[data-accessible-gallery-item]')!;
 
     this.findGalleryItemIndex(targetImageLiItem);
 
-    const button: HTMLButtonElement = this.allGalleryItems[this.currentGalleryItemIndex].querySelector('[data-accessible-gallery-link]');
-    const buttonThumbnail: HTMLImageElement = button.querySelector('img')!;
-    const nextLinkThumbnailImage: HTMLImageElement = this.currentGalleryItem.querySelector('img')!;
-
-    const alt: string | null = nextLinkThumbnailImage.getAttribute('alt');
-    const caption: string | null = nextLinkThumbnailImage.getAttribute('data-accessible-gallery-item-caption');
-    const isInlineImage: boolean = this.isInlineImage(buttonThumbnail.src);
-
-    this.figureReference?.remove();
-    this.figureReference = document.createElement('figure');
-    this.imageReference = document.createElement('img');
-    this.imageReference.id = 'accessible_gallery_image';
-    this.imageReference.alt = alt ?? '';
-    this.imageReference.src = isInlineImage ? buttonThumbnail.src : (button.dataset.src || '');
-
-    this.figureReference.appendChild(this.imageReference);
-    if (caption) {
-      this.figCaptionReference = document.createElement('figcaption');
-      this.figCaptionReference.textContent = caption;
-      this.figureReference.appendChild(this.figCaptionReference);
-    }
-
-    this.modalInnerContainerWithImage.appendChild(this.figureReference);
-
-    this.createLoadingMessage(buttonThumbnail.alt, isInlineImage);
-
-    this.imageReference.addEventListener(
-      'load',
-      this.removeLoadingMessage.bind(this),
-      {
-        once: true
-      });
-
-    this.setCursorToProgress();
-    this.removeCursorProgressOnImageLoadedOrError();
+    this.navigateToImage(this.currentGalleryItemIndex);
   }
 
   private handleOpenAction(event: Event): void {
