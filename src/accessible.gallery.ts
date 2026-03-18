@@ -18,7 +18,6 @@ export default class AccessibleGallery {
   private showLoadingMessageTimeout: number | undefined;
 
   private galleryContainer!: HTMLElement;
-  private currentGalleryItem!: HTMLLIElement;
   private currentGalleryItemIndex!: number;
   private allGalleryItems!: any[];
 
@@ -347,8 +346,6 @@ export default class AccessibleGallery {
   }
 
   private showImage(target: HTMLButtonElement) {
-    this.currentGalleryItem = target.closest('[data-accessible-gallery-item]')!;
-
     const modalDialog: HTMLDialogElement = document.createElement('dialog');
     const existingModalDialog: HTMLDialogElement | null = document.getElementById('accessible_gallery_modal') as HTMLDialogElement;
     const thumbnailImage: HTMLImageElement = target.querySelector('img')!;
@@ -496,17 +493,7 @@ export default class AccessibleGallery {
     this.navigateToImage(this.currentGalleryItemIndex);
   }
 
-  private handleOpenAction(event: Event): void {
-    const target: HTMLButtonElement | null = (event.target as Element).closest('[data-accessible-gallery-link]');
-    const targetThumbail: HTMLButtonElement | null = (event.target as Element).closest('[data-accessible-gallery-link-id]');
-
-    if (target === null && targetThumbail) {
-
-      event.preventDefault();
-      this.showOriginalImageFromThumbnail(targetThumbail);
-
-      return;
-    }
+  private handleOpenAction(target: HTMLButtonElement): void {
 
     if (target === null) {
       return;
@@ -515,8 +502,6 @@ export default class AccessibleGallery {
     if (typeof target.dataset.accessibleGalleryLink !== 'string') {
       return;
     }
-
-    event.preventDefault();
 
     this.galleryContainer = target.closest('[data-accessible-gallery]')!;
 
@@ -544,7 +529,11 @@ export default class AccessibleGallery {
 
   private applyActions(): void {
     CommonUtilities.createCSS(styles, 'accessible_gallery_styles');
-    document.addEventListener('click', this.handleOpenAction.bind(this));
+    document.querySelectorAll<HTMLButtonElement>('[data-accessible-gallery-link]')?.forEach((button: HTMLButtonElement) => {
+      button.addEventListener('click', () => {
+        return this.handleOpenAction(button);
+      });
+    });
   }
 
   public init(): void {
