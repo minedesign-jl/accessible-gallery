@@ -186,6 +186,7 @@
       position: relative;
       width: 100%;
       height: calc(100% - $nav-btn-size - $thumbnail-size);
+      max-width: 100%;
 
       @include media-breakpoint-up(lg) {
         width: auto;
