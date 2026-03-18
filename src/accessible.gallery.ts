@@ -394,34 +394,7 @@ export default class AccessibleGallery {
     this.modalInnerContainer = modalDialog.querySelector('#accessible_gallery_modal_inner_container')!;
     this.modalInnerContainerWithImage = modalDialog.querySelector('#accessible_gallery_modal_inner_with_image')!;
     this.modalInnerContainerWithThumbnails = modalDialog.querySelector('#accessible_gallery_modal_inner_with_thumbnails')!;
-    this.imageReference = document.createElement('img');
-
-    const alt: string | null = thumbnailImage.getAttribute('alt');
-    const caption: string | null = thumbnailImage.getAttribute('data-accessible-gallery-item-caption');
-    const isInlineImage: boolean = this.isInlineImage(thumbnailImage.src);
-
-    this.imageReference.id = 'accessible_gallery_image';
-    this.imageReference.alt = alt ?? '';
-    this.imageReference.src = isInlineImage ? thumbnailImage.src : (target.dataset.src ?? '');
-
-    this.modalInnerContainerWithImage.appendChild(this.imageReference);
-    this.figureReference = document.createElement('figure');
-    this.figureReference.appendChild(this.imageReference);
-    if (caption) {
-      this.figCaptionReference = document.createElement('figcaption');
-      this.figCaptionReference.textContent = caption ?? '';
-      this.figureReference.appendChild(this.figCaptionReference);
-    }
-
-    this.modalInnerContainerWithImage.appendChild(this.figureReference);
-
-    this.imageReference.addEventListener(
-      'load',
-      this.removeLoadingMessage.bind(this),
-      {
-        once: true
-      });
-
+    this.createFigureWithImage(thumbnailImage, target.dataset.src, this.modalInnerContainerWithImage, 'accessible_gallery_image');
     this.createThumbnailsList();
     this.createLoadingMessageContainer();
     this.createLoadingMessage(this.imageReference.alt, isInlineImage);
@@ -459,6 +432,43 @@ export default class AccessibleGallery {
     window.setTimeout((): void => {
       modalDialog.showModal();
     }, 500);
+  }
+
+  private createFigureWithImage(image: HTMLImageElement, altSource: string | undefined, appendTarget: Element, imageId: string | null) {
+    this.figureReference = document.createElement('figure');
+    this.imageReference = document.createElement('img');
+
+    const alt: string | null = image.getAttribute('alt');
+    const caption: string | null = image.getAttribute('data-accessible-gallery-item-caption');
+    const isInlineImage: boolean = this.isInlineImage(image.src);
+
+    if (imageId) {
+      this.imageReference.id = imageId;
+    }
+    this.imageReference.alt = alt ?? '';
+    this.imageReference.src = isInlineImage ? image.src : (altSource ?? '');
+
+    this.figureReference.appendChild(this.imageReference);
+
+    if (caption) {
+      this.figCaptionReference = document.createElement('figcaption');
+
+      this.figCaptionReference.textContent = caption;
+      this.figureReference.appendChild(this.figCaptionReference);
+    }
+    appendTarget.appendChild(this.figureReference);
+
+    this.imageReference.addEventListener(
+      'load',
+      this.removeLoadingMessage.bind(this),
+      {
+        once: true
+      });
+    this.createLoadingMessageContainer();
+    this.createLoadingMessage(this.imageReference.alt, isInlineImage);
+
+    this.setCursorToProgress();
+    this.removeCursorProgressOnImageLoadedOrError();
   }
 
   private handleKeyboardAction(event: KeyboardEvent) {
