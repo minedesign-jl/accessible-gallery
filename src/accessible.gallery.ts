@@ -20,6 +20,7 @@ export default class AccessibleGallery {
   private galleryContainer!: HTMLElement;
   private currentGalleryItemIndex!: number;
   private allGalleryItems!: any[];
+  private allThumbnailButtons!: NodeListOf<HTMLButtonElement>;
 
   private handleKeyboardActionRef: any;
   private handleClickOutsideRef: any;
@@ -27,6 +28,7 @@ export default class AccessibleGallery {
   private handleImageNavigationActionRef: any;
   private handleSwipeLeftRef: any;
   private handleSwipeRightRef: any;
+  private handleThumbnailOpenRef: Map<HTMLButtonElement, (event: Event) => void> = new Map();
 
   constructor() {
     this.imageReference = null;
@@ -278,6 +280,11 @@ export default class AccessibleGallery {
 
     document.removeEventListener('swiped-right', this.handleSwipeRightRef);
     this.handleSwipeRightRef = null;
+
+    this.handleThumbnailOpenRef.forEach((handler, galleryItemButton) => {
+      galleryItemButton.removeEventListener('click', handler);
+    });
+    this.handleThumbnailOpenRef.clear();
   }
 
   private setupAllEventListeners(): void {
@@ -298,6 +305,15 @@ export default class AccessibleGallery {
 
     this.handleSwipeRightRef = this.handleSwipeRight.bind(this);
     document.addEventListener('swiped-right', this.handleSwipeRightRef);
+
+    this.allThumbnailButtons.forEach((thumbnail) => {
+      const handler = (event: Event) => {
+        this.showOriginalImageFromThumbnail(event.currentTarget as HTMLButtonElement);
+      };
+
+      this.handleThumbnailOpenRef.set(thumbnail, handler);
+      thumbnail.addEventListener('click', handler);
+    });
   }
 
   private createThumbnailsList(): void {
@@ -335,15 +351,12 @@ export default class AccessibleGallery {
       button.appendChild(img);
       li.appendChild(button);
       thumbnailsList.appendChild(li);
-
-      button.addEventListener('click', (event: Event) => {
-        this.showOriginalImageFromThumbnail(event.currentTarget as HTMLButtonElement);
-      });
     };
 
     thumbnails.forEach(createThumbnail);
 
     this.modalInnerContainerWithThumbnails.appendChild(thumbnailsList);
+    this.allThumbnailButtons = this.modalInnerContainerWithThumbnails.querySelectorAll('[data-accessible-gallery-link-id]');
   }
 
   private showImage(target: HTMLButtonElement) {
@@ -535,7 +548,7 @@ export default class AccessibleGallery {
     CommonUtilities.createCSS(styles, 'accessible_gallery_styles');
     document.querySelectorAll<HTMLButtonElement>('[data-accessible-gallery-link]')?.forEach((button: HTMLButtonElement) => {
       button.addEventListener('click', () => {
-        return this.handleOpenAction(button);
+        this.handleOpenAction(button);
       });
     });
   }
