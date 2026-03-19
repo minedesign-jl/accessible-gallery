@@ -13,12 +13,14 @@ declare class AccessibleGallery {
     private galleryContainer;
     private currentGalleryItemIndex;
     private allGalleryItems;
+    private allThumbnailButtons;
     private handleKeyboardActionRef;
     private handleClickOutsideRef;
     private closeDialogRef;
     private handleImageNavigationActionRef;
     private handleSwipeLeftRef;
     private handleSwipeRightRef;
+    private handleThumbnailOpenRef;
     constructor();
     private getGalleryConfig;
     private handleClickOutside;
